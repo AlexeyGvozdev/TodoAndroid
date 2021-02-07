@@ -21,7 +21,7 @@ class TaskAdapter : ListAdapter<TaskItem, TaskAdapter.TaskHolder>(TaskItem) {
                 check.isChecked = item.checked
                 val colorTitle = ContextCompat.getColor(
                     titleTask.context,
-                    if (item.checked) R.color.colorBlue else R.color.colorBlueDark
+                    if (item.checked) R.color.colorMainBlue else R.color.colorBlueDark
                 )
                 titleTask.setTextColor(colorTitle)
             }
