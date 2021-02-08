@@ -6,6 +6,7 @@
 
     <color name="colorBlueDark">#315091</color>
     <color name="colorMainBlue">#607EBC</color>
+    <color name="colorBlueLight">#BEC9E0</color>
     <color name="colorMainBlueDark">#5671AB</color>
     <color name="colorWhite">#fff</color>
     <color name="colorTransparent">#00FFFFFF</color>

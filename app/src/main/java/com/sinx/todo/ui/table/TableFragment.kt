@@ -2,6 +2,7 @@ package com.sinx.todo.ui.table
 
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -17,7 +18,11 @@ import kotlinx.coroutines.flow.filterNotNull
 class TableFragment : Fragment(R.layout.fragment_table) {
 
     private val binding by viewBinding(FragmentTableBinding::bind)
-    private val taskAdapter = TaskAdapter()
+    private val taskAdapter = TaskAdapter() { id, checked ->
+        val i = 0
+        Log.d("diffka", "$id, $checked")
+        viewModel.dispatch(TableMsg.CheckedTask(id, checked))
+    }
 
     private val viewModel: TableViewModel by viewModels()
 
