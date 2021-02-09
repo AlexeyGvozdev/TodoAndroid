@@ -6,6 +6,13 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColorSecondary">@color/colorWhite</item>
+        <item name="toolbarStyle">@style/ToolbarMenuStyle</item>
+    </style>
+
+    <style name="ToolbarMenuStyle" parent="@style/Widget.AppCompat.Toolbar">
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingRight">24dp</item>
     </style>
 
     <style name="checkBoxStyle" parent="Base.Theme.AppCompat">

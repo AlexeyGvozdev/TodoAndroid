@@ -3,6 +3,8 @@ package com.sinx.todo.ui.table
 import android.graphics.Rect
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuInflater
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -19,8 +21,6 @@ class TableFragment : Fragment(R.layout.fragment_table) {
 
     private val binding by viewBinding(FragmentTableBinding::bind)
     private val taskAdapter = TaskAdapter() { id, checked ->
-        val i = 0
-        Log.d("diffka", "$id, $checked")
         viewModel.dispatch(TableMsg.CheckedTask(id, checked))
     }
 
@@ -47,6 +47,10 @@ class TableFragment : Fragment(R.layout.fragment_table) {
         lifecycleScope.launchWhenStarted {
             viewModel.viewStates().filterNotNull().collect(::render)
         }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        super.onCreateOptionsMenu(menu, inflater)
     }
 
     private fun render(viewState: TableViewState) {

@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Todo</string>
     <string name="add_new_task">Добавить новую задачу</string>
+    <string name="add_user_to_table">Добавить к доске</string>
 </resources>
