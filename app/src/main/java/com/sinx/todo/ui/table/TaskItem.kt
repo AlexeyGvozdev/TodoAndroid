@@ -1,8 +1,9 @@
 package com.sinx.todo.ui.table
 
-import android.util.Log
 import androidx.recyclerview.widget.DiffUtil
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class TaskItem(val id: Int, val text: String, val checked: Boolean) {
 
     companion object : DiffUtil.ItemCallback<TaskItem>() {
@@ -16,5 +17,4 @@ data class TaskItem(val id: Int, val text: String, val checked: Boolean) {
             return b
         }
     }
-
 }
