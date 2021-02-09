@@ -34,9 +34,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         android:layout_marginBottom="48dp"
         android:layout_marginEnd="24dp"
-        android:background="@color/colorMainBlue"
+        android:backgroundTint="@color/colorMainBlue"
         android:src="@drawable/ic_plus_white"
-        android:tint="@color/colorWhite"
         android:contentDescription="@null"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"/>
