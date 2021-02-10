@@ -3,11 +3,15 @@ package com.sinx.todo.ui.table
 import androidx.lifecycle.viewModelScope
 import com.sinx.todo.api.ws.SocketClient
 import com.sinx.todo.base.BaseViewModel
+import com.sinx.todo.core.Update
+import com.sinx.todo.core.ViewState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.serialization.InternalSerializationApi
 
+@ExperimentalCoroutinesApi
 @OptIn(InternalSerializationApi::class)
 class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, TableMsg>() {
 
@@ -15,30 +19,12 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
         tasks = emptyList()
     )
 
-    private val tasks = (0..3).mapIndexed { index, i ->
-        TaskItem(
-            id = index,
-            text = "text$index ".repeat(index + 1),
-            checked = i % 2 == 0
-        )
-    }.sortedBy { it.checked }.toMutableList()
-    val url = "http://192.168.1.2"
-    val port = 8003
-    private val socketClient: SocketClient = SocketClient("$url:$port")
-
-    init {
-        dispatch(TableMsg.ConnectToSocket)
-        socketClient.connect()
-        viewModelScope.launch(Dispatchers.IO) {
-            socketClient.on<TaskItem>("newTask")
-                .collect { task ->
-                    dispatch(TableMsg.AddTask(task))
-                }
-        }
+    private val view: ViewState<TableModel, TableViewState> = { model ->
+        TableViewState(model.tasks)
     }
 
-    override fun dispatch(msg: TableMsg) {
-        model = when (msg) {
+    private val update: Update<TableModel, TableMsg> = { model, msg ->
+        when (msg) {
             TableMsg.ConnectToSocket -> {
                 model.copy(
                     tasks = tasks
@@ -65,7 +51,33 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
                 )
             }
         }
-        viewState = TableViewState(model.tasks)
+    }
+
+    private val tasks = (0..3).mapIndexed { index, i ->
+        TaskItem(
+            id = index,
+            text = "text$index ".repeat(index + 1),
+            checked = i % 2 == 0
+        )
+    }.sortedBy { it.checked }.toMutableList()
+    val url = "http://192.168.1.2"
+    val port = 8003
+    private val socketClient: SocketClient = SocketClient("$url:$port")
+
+    init {
+        dispatch(TableMsg.ConnectToSocket)
+        socketClient.connect()
+        viewModelScope.launch(Dispatchers.IO) {
+            socketClient.on<TaskItem>("newTask")
+                .collect { task ->
+                    dispatch(TableMsg.AddTask(task))
+                }
+        }
+    }
+
+    override fun dispatch(msg: TableMsg) {
+        model = update(model, msg)
+        viewState = view(model)
     }
 
     override fun onCleared() {

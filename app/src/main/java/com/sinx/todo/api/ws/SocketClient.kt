@@ -27,7 +27,6 @@ class SocketClient(url: String) {
     inline fun <reified T : Any> on(nameEvent: String): Flow<T> = subscribeToEvent(nameEvent)
         .map { Json.decodeFromString(T::class.serializer(), it) }
 
-    @ExperimentalCoroutinesApi
     fun subscribeToEvent(nameEvent: String) = callbackFlow {
         socketIO.on(nameEvent) { body ->
             for (data in body) {
