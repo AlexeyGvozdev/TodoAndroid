@@ -9,13 +9,16 @@ import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import by.kirich1409.viewbindingdelegate.viewBinding
 import com.sinx.todo.R
 import com.sinx.todo.databinding.FragmentTableBinding
 import com.sinx.todo.utils.dp
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.onEach
 
 class TableFragment : Fragment(R.layout.fragment_table) {
 
@@ -26,6 +29,7 @@ class TableFragment : Fragment(R.layout.fragment_table) {
 
     private val viewModel: TableViewModel by viewModels()
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.listTask.apply {
@@ -44,8 +48,22 @@ class TableFragment : Fragment(R.layout.fragment_table) {
             })
             adapter = taskAdapter
         }
-        lifecycleScope.launchWhenStarted {
+        binding.addTask.setOnClickListener {
+            viewModel.dispatch(TableMsg.AddTaskPressed)
+        }
+        lifecycleScope.launchWhenCreated {
             viewModel.viewStates().filterNotNull().collect(::render)
+        }
+
+        lifecycleScope.launchWhenStarted {
+            viewModel.viewAction().filterNotNull().collect(::doAction)
+        }
+
+    }
+
+    private fun doAction(action: TableAction) {
+        when (action) {
+            TableAction.ToAddTask -> findNavController().navigate(R.id.addTaskDialog)
         }
     }
 

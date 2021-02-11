@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/root"
     app:startDestination="@id/tableFragment">
 
     <fragment
         android:id="@+id/tableFragment"
         android:name="com.sinx.todo.ui.table.TableFragment"
-        android:label="TableFragment" />
+        android:label="TableFragment">
+
+        <action
+            android:id="@+id/toAddTaskDialog"
+            app:destination="@id/addTaskDialog" />
+
+    </fragment>
+
+    <dialog
+        android:id="@+id/addTaskDialog"
+        android:name="com.sinx.todo.ui.add.task.AddTaskBottomSheet"
+        tools:layout="@layout/fragment_add_task" />
 </navigation>

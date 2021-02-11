@@ -50,6 +50,10 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
                     tasks = model.tasks + msg.task
                 )
             }
+            TableMsg.AddTaskPressed -> {
+                viewAction = TableAction.ToAddTask
+                model
+            }
         }
     }
 
@@ -92,6 +96,7 @@ sealed class TableMsg {
     data class AddTask(val task: TaskItem) : TableMsg()
 
     object ConnectToSocket : TableMsg()
+    object AddTaskPressed : TableMsg()
 }
 
 data class TableModel(
@@ -103,5 +108,7 @@ data class TableViewState(
 )
 
 sealed class TableAction {
+
+    object ToAddTask : TableAction()
 
 }
