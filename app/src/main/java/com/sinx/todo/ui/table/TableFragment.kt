@@ -48,6 +48,7 @@ class TableFragment : Fragment(R.layout.fragment_table) {
             })
             adapter = taskAdapter
         }
+        binding.toolbar.subtitle = "subtitle"
         binding.addTask.setOnClickListener {
             viewModel.dispatch(TableMsg.AddTaskPressed)
         }
@@ -74,6 +75,7 @@ class TableFragment : Fragment(R.layout.fragment_table) {
     private fun render(viewState: TableViewState) {
         with(viewState) {
             taskAdapter.submitList(tasks)
+            binding.toolbar.subtitle = if (connection) null else getString(R.string.disconnection)
         }
     }
 }

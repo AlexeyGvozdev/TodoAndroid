@@ -1,6 +1,8 @@
 package com.sinx.todo.api.ws
 
 import com.github.nkzawa.socketio.client.IO
+import com.github.nkzawa.socketio.client.Socket
+import com.sinx.todo.base.Either
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
@@ -24,13 +26,23 @@ class SocketClient(url: String) {
         }
     }
 
-    inline fun <reified T : Any> on(nameEvent: String): Flow<T> = subscribeToEvent(nameEvent)
-        .map { Json.decodeFromString(T::class.serializer(), it) }
+    inline fun <reified T : Any> on(nameEvent: String): Flow<Either<Throwable, T>> = subscribeToEvent(nameEvent)
+        .map {
+            try {
+                Either.Right(Json.decodeFromString(T::class.serializer(), it))
+            } catch (e: Exception) {
+                Either.Left(e)
+            }
+        }
 
     fun subscribeToEvent(nameEvent: String) = callbackFlow {
         socketIO.on(nameEvent) { body ->
             for (data in body) {
-                offer(data.toString())
+                if (nameEvent == Socket.EVENT_DISCONNECT) {
+                    offer("{}")
+                } else {
+                    offer(data.toString())
+                }
             }
         }
         awaitClose { cancel() }

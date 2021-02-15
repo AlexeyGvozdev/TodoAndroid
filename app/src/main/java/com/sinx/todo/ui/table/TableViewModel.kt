@@ -1,26 +1,32 @@
 package com.sinx.todo.ui.table
 
 import androidx.lifecycle.viewModelScope
+import com.github.nkzawa.socketio.client.Socket
 import com.sinx.todo.api.ws.SocketClient
 import com.sinx.todo.base.BaseViewModel
+import com.sinx.todo.base.Either
 import com.sinx.todo.core.Update
 import com.sinx.todo.core.ViewState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flattenMerge
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.serialization.InternalSerializationApi
+import kotlinx.serialization.Serializable
 
 @ExperimentalCoroutinesApi
 @OptIn(InternalSerializationApi::class)
 class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, TableMsg>() {
 
     private var model: TableModel = TableModel(
-        tasks = emptyList()
+        tasks = emptyList(),
+        connection = false
     )
 
     private val view: ViewState<TableModel, TableViewState> = { model ->
-        TableViewState(model.tasks)
+        TableViewState(model.tasks, model.connection)
     }
 
     private val update: Update<TableModel, TableMsg> = { model, msg ->
@@ -54,6 +60,7 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
                 viewAction = TableAction.ToAddTask
                 model
             }
+            is TableMsg.Connection -> model.copy(connection = msg.connection)
         }
     }
 
@@ -72,12 +79,25 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
         dispatch(TableMsg.ConnectToSocket)
         socketClient.connect()
         viewModelScope.launch(Dispatchers.IO) {
-            socketClient.on<TaskItem>("newTask")
-                .collect { task ->
-                    dispatch(TableMsg.AddTask(task))
+            val newTaskFlow = socketClient.on<TaskItem>("newTask")
+            val disconnectionFlow = socketClient.on<Disconnect>(Socket.EVENT_DISCONNECT)
+            val connectionFlow = socketClient.on<Connection>("connection")
+            flowOf(newTaskFlow, disconnectionFlow, connectionFlow).flattenMerge().collect { data ->
+                if (data is Either.Right) {
+                    when (data.right) {
+                        is TaskItem -> dispatch(TableMsg.AddTask(data.right))
+                        is Disconnect -> dispatch(TableMsg.Connection(false))
+                        is Connection -> dispatch(TableMsg.Connection(true))
+                    }
                 }
+            }
         }
     }
+
+    @Serializable
+    class Disconnect
+    @Serializable
+    class Connection
 
     override fun dispatch(msg: TableMsg) {
         model = update(model, msg)
@@ -97,14 +117,17 @@ sealed class TableMsg {
 
     object ConnectToSocket : TableMsg()
     object AddTaskPressed : TableMsg()
+    data class Connection(val connection: Boolean) : TableMsg()
 }
 
 data class TableModel(
+    val connection: Boolean,
     val tasks: List<TaskItem>
 )
 
 data class TableViewState(
-    val tasks: List<TaskItem>
+    val tasks: List<TaskItem>,
+    val connection: Boolean
 )
 
 sealed class TableAction {
