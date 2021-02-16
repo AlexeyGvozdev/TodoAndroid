@@ -79,9 +79,9 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
         dispatch(TableMsg.ConnectToSocket)
         socketClient.connect()
         viewModelScope.launch(Dispatchers.IO) {
-            val newTaskFlow = socketClient.on<TaskItem>("newTask")
-            val disconnectionFlow = socketClient.on<Disconnect>(Socket.EVENT_DISCONNECT)
-            val connectionFlow = socketClient.on<Connection>("connection")
+            val newTaskFlow = socketClient.on(SocketClient.Event<TaskItem>("newTask", TaskItem::class))
+            val disconnectionFlow = socketClient.on(SocketClient.Event<Disconnect>(Socket.EVENT_DISCONNECT, Disconnect::class))
+            val connectionFlow = socketClient.on(SocketClient.Event<Connection>("connection", Connection::class))
             flowOf(newTaskFlow, disconnectionFlow, connectionFlow).flattenMerge().collect { data ->
                 if (data is Either.Right) {
                     when (data.right) {

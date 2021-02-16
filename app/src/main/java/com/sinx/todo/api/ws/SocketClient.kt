@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
+import kotlin.reflect.KClass
 
 @ExperimentalCoroutinesApi
 @InternalSerializationApi
@@ -26,10 +27,10 @@ class SocketClient(url: String) {
         }
     }
 
-    inline fun <reified T : Any> on(nameEvent: String): Flow<Either<Throwable, T>> = subscribeToEvent(nameEvent)
+    fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> = subscribeToEvent(event.nameEvent)
         .map {
             try {
-                Either.Right(Json.decodeFromString(T::class.serializer(), it))
+                Either.Right(Json.decodeFromString(event.returnClass.serializer(), it))
             } catch (e: Exception) {
                 Either.Left(e)
             }
@@ -51,4 +52,6 @@ class SocketClient(url: String) {
     fun disconnect() {
         socketIO.disconnect()
     }
+
+    class Event<T : Any>(val nameEvent: String, val returnClass: KClass<T>)
 }
