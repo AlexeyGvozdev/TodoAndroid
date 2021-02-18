@@ -6,9 +6,7 @@ import com.sinx.todo.base.Either
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -36,7 +34,7 @@ class SocketClient(url: String) {
             }
         }
 
-    fun subscribeToEvent(nameEvent: String) = callbackFlow {
+    private fun subscribeToEvent(nameEvent: String) = callbackFlow {
         socketIO.on(nameEvent) { body ->
             for (data in body) {
                 if (nameEvent == Socket.EVENT_DISCONNECT) {
@@ -53,5 +51,5 @@ class SocketClient(url: String) {
         socketIO.disconnect()
     }
 
-    class Event<T : Any>(val nameEvent: String, val returnClass: KClass<T>)
+    open class Event<T : Any>(val nameEvent: String, val returnClass: KClass<T>)
 }

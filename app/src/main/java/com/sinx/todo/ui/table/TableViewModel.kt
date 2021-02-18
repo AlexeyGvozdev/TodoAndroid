@@ -7,6 +7,8 @@ import com.sinx.todo.base.BaseViewModel
 import com.sinx.todo.base.Either
 import com.sinx.todo.core.Update
 import com.sinx.todo.core.ViewState
+import com.sinx.todo.repository.TableEvent
+import com.sinx.todo.repository.TableRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -74,15 +76,13 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
     val url = "http://192.168.1.2"
     val port = 8003
     private val socketClient: SocketClient = SocketClient("$url:$port")
+    private val repository = TableRepository(socketClient)
 
     init {
         dispatch(TableMsg.ConnectToSocket)
         socketClient.connect()
         viewModelScope.launch(Dispatchers.IO) {
-            val newTaskFlow = socketClient.on(SocketClient.Event<TaskItem>("newTask", TaskItem::class))
-            val disconnectionFlow = socketClient.on(SocketClient.Event<Disconnect>(Socket.EVENT_DISCONNECT, Disconnect::class))
-            val connectionFlow = socketClient.on(SocketClient.Event<Connection>("connection", Connection::class))
-            flowOf(newTaskFlow, disconnectionFlow, connectionFlow).flattenMerge().collect { data ->
+            repository.subscribe().collect { data ->
                 if (data is Either.Right) {
                     when (data.right) {
                         is TaskItem -> dispatch(TableMsg.AddTask(data.right))
@@ -94,10 +94,6 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
         }
     }
 
-    @Serializable
-    class Disconnect
-    @Serializable
-    class Connection
 
     override fun dispatch(msg: TableMsg) {
         model = update(model, msg)

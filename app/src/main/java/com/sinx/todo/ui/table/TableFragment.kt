@@ -16,9 +16,12 @@ import com.sinx.todo.R
 import com.sinx.todo.databinding.FragmentTableBinding
 import com.sinx.todo.utils.dp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class TableFragment : Fragment(R.layout.fragment_table) {
 
