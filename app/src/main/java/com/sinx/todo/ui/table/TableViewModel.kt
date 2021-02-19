@@ -1,22 +1,20 @@
 package com.sinx.todo.ui.table
 
 import androidx.lifecycle.viewModelScope
-import com.github.nkzawa.socketio.client.Socket
 import com.sinx.todo.api.ws.SocketClient
 import com.sinx.todo.base.BaseViewModel
 import com.sinx.todo.base.Either
+import com.sinx.todo.base.Feature
+import com.sinx.todo.core.Command
+import com.sinx.todo.core.Init
 import com.sinx.todo.core.Update
 import com.sinx.todo.core.ViewState
-import com.sinx.todo.repository.TableEvent
 import com.sinx.todo.repository.TableRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flattenMerge
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.serialization.InternalSerializationApi
-import kotlinx.serialization.Serializable
 
 @ExperimentalCoroutinesApi
 @OptIn(InternalSerializationApi::class)
@@ -27,52 +25,8 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
         connection = false
     )
 
-    private val view: ViewState<TableModel, TableViewState> = { model ->
-        TableViewState(model.tasks, model.connection)
-    }
+    private val feature = provideTableFeature()
 
-    private val update: Update<TableModel, TableMsg> = { model, msg ->
-        when (msg) {
-            TableMsg.ConnectToSocket -> {
-                model.copy(
-                    tasks = tasks
-                )
-            }
-            is TableMsg.CheckedTask -> {
-                model.tasks.indexOfFirst { it.id == msg.id }.let { index ->
-                    if (index >= 0) {
-                        model.copy(tasks =
-                        model.tasks.toMutableList().apply {
-                            this[index] =
-                                model.tasks[index].copy(checked = msg.checked)
-                            sortBy { it.checked }
-                        }
-                        )
-                    } else {
-                        model
-                    }
-                }
-            }
-            is TableMsg.AddTask -> {
-                model.copy(
-                    tasks = model.tasks + msg.task
-                )
-            }
-            TableMsg.AddTaskPressed -> {
-                viewAction = TableAction.ToAddTask
-                model
-            }
-            is TableMsg.Connection -> model.copy(connection = msg.connection)
-        }
-    }
-
-    private val tasks = (0..3).mapIndexed { index, i ->
-        TaskItem(
-            id = index,
-            text = "text$index ".repeat(index + 1),
-            checked = i % 2 == 0
-        )
-    }.sortedBy { it.checked }.toMutableList()
     val url = "http://192.168.1.2"
     val port = 8003
     private val socketClient: SocketClient = SocketClient("$url:$port")
@@ -96,8 +50,21 @@ class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, Ta
 
 
     override fun dispatch(msg: TableMsg) {
-        model = update(model, msg)
-        viewState = view(model)
+        val (newModel, effect) = feature.update(model, msg)
+        viewModelScope.launch(Dispatchers.Default) {
+            effect { command ->
+                when (command) {
+                    is Command.ActionCommand -> command()?.let {
+                        viewAction = it
+                    }
+                    is Command.MsgCommand -> command()?.let(::dispatch)
+                }
+            }
+        }
+        if (newModel != model) {
+            model = newModel
+            viewState = feature.viewState(model)
+        }
     }
 
     override fun onCleared() {
@@ -130,4 +97,58 @@ sealed class TableAction {
 
     object ToAddTask : TableAction()
 
+}
+
+typealias TableFeature = Feature<TableModel, TableViewState, TableAction, TableMsg>
+
+fun provideTableFeature() : TableFeature {
+    val init: Init<TableModel, TableMsg, TableAction> = { tableModel ->
+        (tableModel ?: TableModel(false, emptyList())) to {}
+    }
+    val update: Update<TableModel, TableMsg, TableAction> = { model, msg ->
+        when (msg) {
+            TableMsg.ConnectToSocket -> {
+                model.copy(
+                    tasks = (0..3).mapIndexed { index, i ->
+                        TaskItem(
+                            id = index,
+                            text = "text$index ".repeat(index + 1),
+                            checked = i % 2 == 0
+                        )
+                    }.sortedBy { it.checked }.toMutableList()
+                ) to {}
+            }
+            is TableMsg.CheckedTask -> {
+                model.tasks.indexOfFirst { it.id == msg.id }.let { index ->
+                    if (index >= 0) {
+                        model.copy(tasks =
+                        model.tasks.toMutableList().apply {
+                            this[index] =
+                                model.tasks[index].copy(checked = msg.checked)
+                            sortBy { it.checked }
+                        }
+                        )
+                    } else {
+                        model
+                    }
+                } to {}
+            }
+            is TableMsg.AddTask -> {
+                model.copy(
+                    tasks = model.tasks + msg.task
+                ) to {}
+            }
+            TableMsg.AddTaskPressed -> {
+                model to { dispatch ->
+                    dispatch(Command.ActionCommand(TableAction.ToAddTask))
+                }
+            }
+            is TableMsg.Connection -> model.copy(connection = msg.connection) to {}
+        }
+    }
+    val view: ViewState<TableModel, TableViewState> = { model ->
+        TableViewState(model.tasks, model.connection)
+    }
+
+    return TableFeature(init, update, view)
 }

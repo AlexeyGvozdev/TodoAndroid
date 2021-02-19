@@ -10,26 +10,26 @@ class AddTaskViewModel :
     private var model: AddTaskModel = AddTaskModel()
 
     override fun dispatch(msg: AddTaskMsg) {
-        model = update(model, msg)
-        viewState = view(model)
+//        model = update(model, msg)
+//        viewState = view(model)
     }
 
-    private val update: Update<AddTaskModel, AddTaskMsg> = { model, msg ->
-        when (msg) {
-            is AddTaskMsg.OnCreatePressed -> {
-                viewAction = AddTaskAction.CloseDialog
-                model
-            }
-            AddTaskMsg.OnClosePressed -> {
-                viewAction = AddTaskAction.CloseDialog
-                model
-            }
-        }
-    }
-
-    private val view: ViewState<AddTaskModel, AddTaskViewState> = { mdoel ->
-        AddTaskViewState()
-    }
+//    private val update: Update<AddTaskModel, AddTaskMsg> = { model, msg ->
+//        when (msg) {
+//            is AddTaskMsg.OnCreatePressed -> {
+//                viewAction = AddTaskAction.CloseDialog
+//                model
+//            }
+//            AddTaskMsg.OnClosePressed -> {
+//                viewAction = AddTaskAction.CloseDialog
+//                model
+//            }
+//        }
+//    }
+//
+//    private val view: ViewState<AddTaskModel, AddTaskViewState> = { mdoel ->
+//        AddTaskViewState()
+//    }
 }
 
 class AddTaskModel()
