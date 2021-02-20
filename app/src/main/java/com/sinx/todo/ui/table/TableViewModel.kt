@@ -5,10 +5,7 @@ import com.sinx.todo.api.ws.SocketClient
 import com.sinx.todo.base.BaseViewModel
 import com.sinx.todo.base.Either
 import com.sinx.todo.base.Feature
-import com.sinx.todo.core.Command
-import com.sinx.todo.core.Init
-import com.sinx.todo.core.Update
-import com.sinx.todo.core.ViewState
+import com.sinx.todo.core.*
 import com.sinx.todo.repository.TableRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -20,44 +17,27 @@ import kotlinx.serialization.InternalSerializationApi
 @OptIn(InternalSerializationApi::class)
 class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, TableMsg>() {
 
-    private var model: TableModel = TableModel(
-        tasks = emptyList(),
-        connection = false
-    )
-
-    private val feature = provideTableFeature()
-
     val url = "http://192.168.1.2"
     val port = 8003
     private val socketClient: SocketClient = SocketClient("$url:$port")
     private val repository = TableRepository(socketClient)
+    private val feature = provideTableFeature(repository)
+    private var model: TableModel
 
     init {
         dispatch(TableMsg.ConnectToSocket)
         socketClient.connect()
-        viewModelScope.launch(Dispatchers.IO) {
-            repository.subscribe().collect { data ->
-                if (data is Either.Right) {
-                    when (data.right) {
-                        is TaskItem -> dispatch(TableMsg.AddTask(data.right))
-                        is Disconnect -> dispatch(TableMsg.Connection(false))
-                        is Connection -> dispatch(TableMsg.Connection(true))
-                    }
-                }
-            }
-        }
+        val (initModel, _) = feature.init(null)
+        model = initModel
     }
-
 
     override fun dispatch(msg: TableMsg) {
         val (newModel, effect) = feature.update(model, msg)
         viewModelScope.launch(Dispatchers.Default) {
             effect { command ->
                 when (command) {
-                    is Command.ActionCommand -> command()?.let {
-                        viewAction = it
-                    }
-                    is Command.MsgCommand -> command()?.let(::dispatch)
+                    is Command.ActionCommand -> viewAction = command()
+                    is Command.MsgCommand -> dispatch(command())
                 }
             }
         }
@@ -101,9 +81,24 @@ sealed class TableAction {
 
 typealias TableFeature = Feature<TableModel, TableViewState, TableAction, TableMsg>
 
-fun provideTableFeature() : TableFeature {
+@OptIn(ExperimentalCoroutinesApi::class)
+fun provideTableFeature(repository: TableRepository): TableFeature {
     val init: Init<TableModel, TableMsg, TableAction> = { tableModel ->
-        (tableModel ?: TableModel(false, emptyList())) to {}
+        (tableModel ?: TableModel(false, emptyList())) to { dispatch ->
+            repository.subscribe().collect { data ->
+                if (data is Either.Right) {
+                    dispatch(
+                        Command.MsgCommand(
+                            when (data.right) {
+                                is TaskItem -> TableMsg.AddTask(data.right)
+                                is Disconnect -> TableMsg.Connection(false)
+                                is Connection -> TableMsg.Connection(true)
+                            }
+                        )
+                    )
+                }
+            }
+        }
     }
     val update: Update<TableModel, TableMsg, TableAction> = { model, msg ->
         when (msg) {
@@ -116,7 +111,7 @@ fun provideTableFeature() : TableFeature {
                             checked = i % 2 == 0
                         )
                     }.sortedBy { it.checked }.toMutableList()
-                ) to {}
+                ) to Nill()
             }
             is TableMsg.CheckedTask -> {
                 model.tasks.indexOfFirst { it.id == msg.id }.let { index ->
@@ -131,12 +126,12 @@ fun provideTableFeature() : TableFeature {
                     } else {
                         model
                     }
-                } to {}
+                } to Nill()
             }
             is TableMsg.AddTask -> {
                 model.copy(
                     tasks = model.tasks + msg.task
-                ) to {}
+                ) to Nill()
             }
             TableMsg.AddTaskPressed -> {
                 model to { dispatch ->

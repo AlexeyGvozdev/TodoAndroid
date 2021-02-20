@@ -10,14 +10,16 @@ typealias ViewState<Model, ViewState> = Effect<Model, ViewState>
 
 typealias Init<Model, Msg, Action> =  (Model?) -> Pair<Model, (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit)>
 
-sealed class Command<Msg, Action>(val msg: Msg?, val action: Action?) {
+fun <Msg, Action> Nill() : (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit) = {}
 
-    class ActionCommand<Msg, Action>(action: Action) :
+sealed class Command<Msg, Action>(private val msg: Msg?, private val action: Action?) {
+
+    class ActionCommand<Msg, Action>(private val action: Action) :
         Command<Msg, Action>(null, action) {
         operator fun invoke() = action
     }
 
-    class MsgCommand<Msg, Action>(msg: Msg) : Command<Msg, Action>(msg, null) {
+    class MsgCommand<Msg, Action>(private val msg: Msg) : Command<Msg, Action>(msg, null) {
         operator fun invoke() = msg
     }
 }
