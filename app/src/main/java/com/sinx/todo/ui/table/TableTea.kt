@@ -1,90 +1,18 @@
 package com.sinx.todo.ui.table
 
-import androidx.lifecycle.viewModelScope
-import com.sinx.todo.api.ws.SocketClient
-import com.sinx.todo.base.BaseViewModel
 import com.sinx.todo.base.Either
-import com.sinx.todo.base.Feature
+import com.sinx.todo.base.Tea
 import com.sinx.todo.core.*
 import com.sinx.todo.repository.TableRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
-import kotlinx.serialization.InternalSerializationApi
 
-@ExperimentalCoroutinesApi
-@OptIn(InternalSerializationApi::class)
-class TableViewModel : BaseViewModel<TableModel, TableViewState, TableAction, TableMsg>() {
-
-    val url = "http://192.168.1.2"
-    val port = 8003
-    private val socketClient: SocketClient = SocketClient("$url:$port")
-    private val repository = TableRepository(socketClient)
-    private val feature = provideTableFeature(repository)
-    private var model: TableModel
-
-    init {
-        dispatch(TableMsg.ConnectToSocket)
-        socketClient.connect()
-        val (initModel, _) = feature.init(null)
-        model = initModel
-    }
-
-    override fun dispatch(msg: TableMsg) {
-        val (newModel, effect) = feature.update(model, msg)
-        viewModelScope.launch(Dispatchers.Default) {
-            effect { command ->
-                when (command) {
-                    is Command.ActionCommand -> viewAction = command()
-                    is Command.MsgCommand -> dispatch(command())
-                }
-            }
-        }
-        if (newModel != model) {
-            model = newModel
-            viewState = feature.viewState(model)
-        }
-    }
-
-    override fun onCleared() {
-        socketClient.disconnect()
-        super.onCleared()
-    }
-}
-
-sealed class TableMsg {
-    data class CheckedTask(val id: Int, val checked: Boolean) : TableMsg()
-
-    data class AddTask(val task: TaskItem) : TableMsg()
-
-    object ConnectToSocket : TableMsg()
-    object AddTaskPressed : TableMsg()
-    data class Connection(val connection: Boolean) : TableMsg()
-}
-
-data class TableModel(
-    val connection: Boolean,
-    val tasks: List<TaskItem>
-)
-
-data class TableViewState(
-    val tasks: List<TaskItem>,
-    val connection: Boolean
-)
-
-sealed class TableAction {
-
-    object ToAddTask : TableAction()
-
-}
-
-typealias TableFeature = Feature<TableModel, TableViewState, TableAction, TableMsg>
+typealias TableTea = Tea<TableModel, TableViewState, TableAction, TableMsg>
 
 @OptIn(ExperimentalCoroutinesApi::class)
-fun provideTableFeature(repository: TableRepository): TableFeature {
-    val init: Init<TableModel, TableMsg, TableAction> = { tableModel ->
-        (tableModel ?: TableModel(false, emptyList())) to { dispatch ->
+fun provideTableFeature(repository: TableRepository): TableTea {
+    val init: Init<TableModel, TableMsg, TableAction> = {
+        TableModel(false, emptyList()) to { dispatch ->
             repository.subscribe().collect { data ->
                 if (data is Either.Right) {
                     dispatch(
@@ -111,7 +39,7 @@ fun provideTableFeature(repository: TableRepository): TableFeature {
                             checked = i % 2 == 0
                         )
                     }.sortedBy { it.checked }.toMutableList()
-                ) to Nill()
+                ) to none()
             }
             is TableMsg.CheckedTask -> {
                 model.tasks.indexOfFirst { it.id == msg.id }.let { index ->
@@ -126,12 +54,12 @@ fun provideTableFeature(repository: TableRepository): TableFeature {
                     } else {
                         model
                     }
-                } to Nill()
+                } to none()
             }
             is TableMsg.AddTask -> {
                 model.copy(
                     tasks = model.tasks + msg.task
-                ) to Nill()
+                ) to none()
             }
             TableMsg.AddTaskPressed -> {
                 model to { dispatch ->
@@ -145,5 +73,30 @@ fun provideTableFeature(repository: TableRepository): TableFeature {
         TableViewState(model.tasks, model.connection)
     }
 
-    return TableFeature(init, update, view)
+    return TableTea(init, update, view)
+}
+
+
+sealed class TableMsg {
+    data class CheckedTask(val id: Int, val checked: Boolean) : TableMsg()
+
+    data class AddTask(val task: TaskItem) : TableMsg()
+
+    object ConnectToSocket : TableMsg()
+    object AddTaskPressed : TableMsg()
+    data class Connection(val connection: Boolean) : TableMsg()
+}
+
+data class TableModel(
+    val connection: Boolean,
+    val tasks: List<TaskItem>
+)
+
+data class TableViewState(
+    val tasks: List<TaskItem>,
+    val connection: Boolean
+)
+
+sealed class TableAction {
+    object ToAddTask : TableAction()
 }
