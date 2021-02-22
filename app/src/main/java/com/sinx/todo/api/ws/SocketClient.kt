@@ -12,8 +12,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
-@ExperimentalCoroutinesApi
-@InternalSerializationApi
 class SocketClient(url: String) {
 
     private val socketIO = IO.socket(url)
@@ -25,6 +23,7 @@ class SocketClient(url: String) {
         }
     }
 
+    @OptIn(InternalSerializationApi::class)
     fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> = subscribeToEvent(event.nameEvent)
         .map {
             try {
@@ -34,6 +33,7 @@ class SocketClient(url: String) {
             }
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun subscribeToEvent(nameEvent: String) = callbackFlow {
         socketIO.on(nameEvent) { body ->
             for (data in body) {

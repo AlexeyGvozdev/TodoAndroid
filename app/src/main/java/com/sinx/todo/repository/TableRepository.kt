@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.InternalSerializationApi
 import kotlin.reflect.KClass
 
-@ExperimentalCoroutinesApi
 @OptIn(InternalSerializationApi::class)
 class TableRepository(val socketClient: SocketClient) {
 

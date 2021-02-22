@@ -2,15 +2,17 @@ package com.sinx.todo.core
 
 import kotlinx.coroutines.CoroutineScope
 
-typealias Effect<K, T> = (K) -> T
+typealias Next<K, T> = (K) -> T
 
-typealias Update<Model, Msg, Action> = (Model, Msg) -> Pair<Model, (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit)>
+typealias ModelWithEffect<Model, Msg, Action> = Pair<Model, (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit)>
 
-typealias ViewState<Model, ViewState> = Effect<Model, ViewState>
+typealias Update<Model, Msg, Action> = (Model, Msg) -> ModelWithEffect<Model, Msg, Action>
 
-typealias Init<Model, Msg, Action> =  (Model?) -> Pair<Model, (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit)>
+typealias ViewState<Model, ViewState> = Next<Model, ViewState>
 
-fun <Msg, Action> Nill() : (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit) = {}
+typealias Init<Model, Msg, Action> =  () -> ModelWithEffect<Model, Msg, Action>
+
+fun <Msg, Action> none() : (suspend CoroutineScope.(suspend (Command<Msg, Action>) -> Unit) -> Unit) = {}
 
 sealed class Command<Msg, Action>(private val msg: Msg?, private val action: Action?) {
 

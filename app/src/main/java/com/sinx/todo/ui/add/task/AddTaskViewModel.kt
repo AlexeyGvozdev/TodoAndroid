@@ -1,15 +1,13 @@
 package com.sinx.todo.ui.add.task
 
-import com.sinx.todo.base.BaseViewModel
-import com.sinx.todo.core.Update
-import com.sinx.todo.core.ViewState
+import androidx.lifecycle.ViewModel
 
-class AddTaskViewModel :
-    BaseViewModel<AddTaskModel, AddTaskViewState, AddTaskAction, AddTaskMsg>() {
+class AddTaskViewModel : ViewModel() {
+//    BaseViewModel<AddTaskModel, AddTaskViewState, AddTaskAction, AddTaskMsg>() {
 
-    private var model: AddTaskModel = AddTaskModel()
+//    private var model: AddTaskModel = AddTaskModel()
 
-    override fun dispatch(msg: AddTaskMsg) {
+//    override fun dispatch(msg: AddTaskMsg) {
 //        model = update(model, msg)
 //        viewState = view(model)
     }
@@ -30,7 +28,6 @@ class AddTaskViewModel :
 //    private val view: ViewState<AddTaskModel, AddTaskViewState> = { mdoel ->
 //        AddTaskViewState()
 //    }
-}
 
 class AddTaskModel()
 

@@ -2,26 +2,25 @@ package com.sinx.todo.ui.table
 
 import android.graphics.Rect
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import by.kirich1409.viewbindingdelegate.viewBinding
 import com.sinx.todo.R
+import com.sinx.todo.api.ws.SocketClient
+import com.sinx.todo.core.initViewModel
 import com.sinx.todo.databinding.FragmentTableBinding
+import com.sinx.todo.repository.TableRepository
 import com.sinx.todo.utils.dp
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 
 class TableFragment : Fragment(R.layout.fragment_table) {
 
@@ -30,11 +29,18 @@ class TableFragment : Fragment(R.layout.fragment_table) {
         viewModel.dispatch(TableMsg.CheckedTask(id, checked))
     }
 
-    private val viewModel: TableViewModel by viewModels()
+    val url = "http://192.168.1.2"
+    val port = 8003
+    private val socketClient: SocketClient = SocketClient("$url:$port")
+    private val repository = TableRepository(socketClient)
+    private val feature = provideTableFeature(repository)
+
+    private val viewModel by initViewModel(feature)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        repository.socketClient.connect()
         binding.listTask.apply {
             addItemDecoration(object : RecyclerView.ItemDecoration() {
                 override fun getItemOffsets(
@@ -56,13 +62,16 @@ class TableFragment : Fragment(R.layout.fragment_table) {
             viewModel.dispatch(TableMsg.AddTaskPressed)
         }
         lifecycleScope.launchWhenCreated {
-            viewModel.viewStates().filterNotNull().collect(::render)
+            combine(
+                viewModel.viewStates().filterNotNull().onEach(::render),
+                viewModel.viewAction().filterNotNull().onEach(::doAction)
+            ) { _, _ -> }.collect()
         }
+    }
 
-        lifecycleScope.launchWhenStarted {
-            viewModel.viewAction().filterNotNull().collect(::doAction)
-        }
-
+    override fun onDestroyView() {
+        repository.socketClient.disconnect()
+        super.onDestroyView()
     }
 
     private fun doAction(action: TableAction) {

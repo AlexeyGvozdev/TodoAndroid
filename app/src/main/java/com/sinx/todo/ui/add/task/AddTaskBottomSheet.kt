@@ -30,16 +30,16 @@ class AddTaskBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.close.setOnClickListener {
-            viewModel.dispatch(AddTaskMsg.OnClosePressed)
+//            viewModel.dispatch(AddTaskMsg.OnClosePressed)
         }
         binding.create.setOnClickListener {
-            viewModel.dispatch(AddTaskMsg.OnCreatePressed(binding.taskName.text.toString()))
+//            viewModel.dispatch(AddTaskMsg.OnCreatePressed(binding.taskName.text.toString()))
         }
         lifecycleScope.launchWhenCreated {
-            viewModel.viewAction().filterNotNull().collect(::doAction)
+//            viewModel.viewAction().filterNotNull().collect(::doAction)
         }
         lifecycleScope.launchWhenStarted {
-            viewModel.viewStates().filterNotNull().collect(::render)
+//            viewModel.viewStates().filterNotNull().collect(::render)
         }
     }
 
