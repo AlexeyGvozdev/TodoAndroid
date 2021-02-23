@@ -6,7 +6,9 @@ import com.sinx.todo.base.Either
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
@@ -24,18 +26,19 @@ class SocketClient(url: String) {
     }
 
     @OptIn(InternalSerializationApi::class)
-    fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> = subscribeToEvent(event.nameEvent)
-        .map {
-            try {
-                Either.Right(Json.decodeFromString(event.returnClass.serializer(), it))
-            } catch (e: Exception) {
-                Either.Left(e)
+    fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> =
+        subscribeToEvent(event.nameEvent)
+            .map {
+                try {
+                    Either.Right(Json.decodeFromString(event.returnClass.serializer(), it))
+                } catch (e: Exception) {
+                    Either.Left(e)
+                }
             }
-        }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun subscribeToEvent(nameEvent: String) = callbackFlow {
-        socketIO.on(nameEvent) { body ->
+        val listener: (args: Array<Any>) -> Unit = { body ->
             for (data in body) {
                 if (nameEvent == Socket.EVENT_DISCONNECT) {
                     offer("{}")
@@ -44,7 +47,11 @@ class SocketClient(url: String) {
                 }
             }
         }
-        awaitClose { cancel() }
+        socketIO.on(nameEvent, listener)
+        awaitClose {
+            socketIO.off(nameEvent, listener)
+            cancel()
+        }
     }
 
     fun disconnect() {
