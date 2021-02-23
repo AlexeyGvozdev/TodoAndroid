@@ -1,23 +1,25 @@
 package com.sinx.todo.base
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sinx.todo.core.Command
 import com.sinx.todo.core.ModelWithEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val feature: Tea<Model, View, Action, Msg>) :
+class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val tea: Tea<Model, View, Action, Msg>) :
     ViewModel() {
 
     private var model: Model
 
     init {
-        model = middlewareEffect(feature.init())
+        model = middlewareEffect(tea.init())
     }
 
     private val TAG = TeaVM::class.java.simpleName
@@ -48,10 +50,10 @@ class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val feature
 
 
     fun dispatch(msg: Msg) {
-        val newModel = middlewareEffect(feature.update(model, msg))
+        val newModel = middlewareEffect(tea.update(model, msg))
         if (newModel != model) {
             model = newModel
-            viewState = feature.viewState(model)
+            viewState = tea.viewState(model)
         }
     }
 
@@ -66,5 +68,11 @@ class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val feature
             }
         }
         return model
+    }
+
+    override fun onCleared() {
+        Log.d("cancelFlow", "onCleared")
+        viewModelScope.cancel()
+        super.onCleared()
     }
 }
