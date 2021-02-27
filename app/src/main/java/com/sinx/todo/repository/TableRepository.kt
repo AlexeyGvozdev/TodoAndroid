@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flattenMerge
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.serialization.InternalSerializationApi
+import javax.inject.Inject
 import kotlin.reflect.KClass
 
 @OptIn(InternalSerializationApi::class)
-class TableRepository(val socketClient: SocketClient) {
+class TableRepository (private val socketClient: SocketClient) {
 
     fun subscribe() : Flow<Either<Throwable, out TableResponse>> {
         val newTaskFlow = socketClient.on(SocketClient.Event("newTask", TaskItem::class))
@@ -26,13 +27,5 @@ class TableRepository(val socketClient: SocketClient) {
         return flowOf(newTaskFlow, disconnectionFlow, connectionFlow).flattenMerge()
     }
 
-    fun unsubscribe() {}
-
-}
-
-@OptIn(InternalSerializationApi::class)
-sealed class TableEvent<T : Any>(name: String, clazz: KClass<T>) : SocketClient.Event<T>(name, clazz) {
-
-    object NewTaskEvent : TableEvent<TaskItem>("newTask", TaskItem::class)
-
+    fun connected() = socketClient.connected()
 }

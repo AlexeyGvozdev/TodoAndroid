@@ -10,9 +10,10 @@ import kotlinx.coroutines.flow.collect
 typealias TableTea = Tea<TableModel, TableViewState, TableAction, TableMsg>
 
 @OptIn(ExperimentalCoroutinesApi::class)
-fun provideTableFeature(repository: TableRepository): TableTea {
+fun provideTableTea(repository: TableRepository): TableTea {
     val init: Init<TableModel, TableMsg, TableAction> = {
-        TableModel(false, emptyList()) to { dispatch ->
+        TableModel(false, emptyList()) to batch (
+            { dispatch ->
             repository.subscribe().collect { data ->
                 if (data is Either.Right) {
                     dispatch(
@@ -26,7 +27,11 @@ fun provideTableFeature(repository: TableRepository): TableTea {
                     )
                 }
             }
-        }
+        },
+            { dispatch ->
+                dispatch(Command.MsgCommand(TableMsg.Connection(repository.connected())))
+            }
+        )
     }
     val update: Update<TableModel, TableMsg, TableAction> = { model, msg ->
         when (msg) {
