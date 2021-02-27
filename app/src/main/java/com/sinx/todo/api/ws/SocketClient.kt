@@ -14,9 +14,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
-class SocketClient(url: String) {
-
+class SocketClient(url: String, val middleware: (String, String) -> Unit = { _, _ ->}) {
     private val socketIO = IO.socket(url)
+
+    constructor(url: String) : this(url, {_, _ -> })
 
     fun connect() {
         if (socketIO.connected().not()) {
@@ -25,11 +26,14 @@ class SocketClient(url: String) {
         }
     }
 
+    fun connected() = socketIO.connected()
+
     @OptIn(InternalSerializationApi::class)
     fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> =
         subscribeToEvent(event.nameEvent)
             .map {
                 try {
+                    middleware(event.nameEvent, it)
                     Either.Right(Json.decodeFromString(event.returnClass.serializer(), it))
                 } catch (e: Exception) {
                     Either.Left(e)

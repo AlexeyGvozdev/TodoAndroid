@@ -22,25 +22,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onEach
 
-class TableFragment : Fragment(R.layout.fragment_table) {
+class TableFragment(tea: TableTea) : Fragment(R.layout.fragment_table) {
 
     private val binding by viewBinding(FragmentTableBinding::bind)
     private val taskAdapter = TaskAdapter() { id, checked ->
         viewModel.dispatch(TableMsg.CheckedTask(id, checked))
     }
 
-    val url = "http://192.168.1.2"
-    val port = 8003
-    private val socketClient: SocketClient = SocketClient("$url:$port")
-    private val repository = TableRepository(socketClient)
-    private val feature = provideTableFeature(repository)
+    private val viewModel by initViewModel(tea)
 
-    private val viewModel by initViewModel(feature)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        repository.socketClient.connect()
         binding.listTask.apply {
             addItemDecoration(object : RecyclerView.ItemDecoration() {
                 override fun getItemOffsets(
@@ -69,19 +61,10 @@ class TableFragment : Fragment(R.layout.fragment_table) {
         }
     }
 
-    override fun onDestroyView() {
-        repository.socketClient.disconnect()
-        super.onDestroyView()
-    }
-
     private fun doAction(action: TableAction) {
         when (action) {
             TableAction.ToAddTask -> findNavController().navigate(R.id.addTaskDialog)
         }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        super.onCreateOptionsMenu(menu, inflater)
     }
 
     private fun render(viewState: TableViewState) {
