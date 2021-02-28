@@ -12,23 +12,14 @@ import javax.inject.Inject
 class MainActivity : DaggerAppCompatActivity() {
 
     @Inject
-    lateinit var fragmentFactory: DaggerFragmentFactory
+    lateinit var fragmentFactory: Lazy<DaggerFragmentFactory>
     @Inject
     lateinit var connectionBehavior: Lazy<WebSocketConnectionBehavior>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        supportFragmentManager.fragmentFactory = fragmentFactory
+        supportFragmentManager.fragmentFactory = fragmentFactory.get()
         setContentView(R.layout.activity_main)
-    }
-
-    override fun onStart() {
-        connectionBehavior.get().connect()
-        super.onStart()
-    }
-
-    override fun onStop() {
-        connectionBehavior.get().disconnect()
-        super.onStop()
+        lifecycle.addObserver(connectionBehavior.get())
     }
 }
