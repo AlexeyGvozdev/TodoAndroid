@@ -1,13 +1,11 @@
 package com.sinx.todo.base
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sinx.todo.core.Command
-import com.sinx.todo.core.ModelWithEffect
+import com.sinx.todo.core.Effect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +17,9 @@ class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val tea: Te
     private var model: Model
 
     init {
-        model = middlewareEffect(tea.init())
+        val (initModel, effect) = tea.init()
+        model = initModel
+        doEffect(effect)
     }
 
     private val TAG = TeaVM::class.java.simpleName
@@ -50,29 +50,24 @@ class TeaVM<Model: Any, View : Any, Action : Any, Msg : Any>(private val tea: Te
 
 
     fun dispatch(msg: Msg) {
-        val newModel = middlewareEffect(tea.update(model, msg))
+        val (newModel, effect) = tea.update(model, msg)
         if (newModel != model) {
             model = newModel
             viewState = tea.viewState(model)
         }
+        doEffect(effect)
     }
 
-    private fun middlewareEffect(modelWithEffect: ModelWithEffect<Model, Msg, Action>) : Model {
-        val (model, effect) = modelWithEffect
-        viewModelScope.launch(Dispatchers.Default) {
-            effect { command ->
-                when (command) {
-                    is Command.ActionCommand -> viewAction = command()
-                    is Command.MsgCommand -> dispatch(command())
-                }
-            }
+    private fun dispatchCommand(command: Command<Msg, Action>) {
+        when (command) {
+            is Command.ActionCommand -> viewAction = command()
+            is Command.MsgCommand -> dispatch(command())
         }
-        return model
     }
 
-    override fun onCleared() {
-        Log.d("cancelFlow", "onCleared")
-        viewModelScope.cancel()
-        super.onCleared()
+    private fun doEffect(effect: Effect<Msg, Action>) {
+        viewModelScope.launch(Dispatchers.Default) {
+            effect(::dispatchCommand)
+        }
     }
 }
