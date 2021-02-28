@@ -1,9 +1,10 @@
 package com.sinx.todo.di.modules
 
-import android.util.Log
 import com.sinx.todo.BuildConfig
-import com.sinx.todo.api.ws.WebSocketConnectionBehavior
+import com.sinx.todo.api.middleware.WebSocketLogger
+import com.sinx.todo.api.middleware.WebSocketMiddleware
 import com.sinx.todo.api.ws.SocketClient
+import com.sinx.todo.api.ws.WebSocketConnectionBehavior
 import com.sinx.todo.di.scopes.ActivityScope
 import dagger.Module
 import dagger.Provides
@@ -13,18 +14,20 @@ class WebModule {
 
     @ActivityScope
     @Provides
-    fun provideSocketClient(): SocketClient {
-        return if (BuildConfig.ENABLE_LOG) {
-            val logMiddleWare: (String, String) -> Unit = { name, eventObject ->
-                Log.d("websocket", "$name: $eventObject")
-            }
-            SocketClient(BuildConfig.WEB_SOCKET_URL, logMiddleWare)
-        } else {
-            SocketClient(BuildConfig.WEB_SOCKET_URL)
+    fun provideSocketClient(webSocketMiddleware: WebSocketMiddleware): SocketClient {
+        val client = SocketClient(BuildConfig.WEB_SOCKET_URL)
+        if (BuildConfig.ENABLE_LOG) {
+            client.addMiddleware(webSocketMiddleware)
         }
+        return client
     }
 
     @ActivityScope
     @Provides
-    fun provideConnectionBehavior(socketClient: SocketClient) : WebSocketConnectionBehavior = WebSocketConnectionBehavior(socketClient)
+    fun provideConnectionBehavior(socketClient: SocketClient): WebSocketConnectionBehavior =
+        WebSocketConnectionBehavior(socketClient)
+
+    @ActivityScope
+    @Provides
+    fun provideLoggerWebSocket(): WebSocketMiddleware = WebSocketLogger()
 }

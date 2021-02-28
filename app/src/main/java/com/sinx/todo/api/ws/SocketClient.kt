@@ -2,6 +2,7 @@ package com.sinx.todo.api.ws
 
 import com.github.nkzawa.socketio.client.IO
 import com.github.nkzawa.socketio.client.Socket
+import com.sinx.todo.api.middleware.WebSocketMiddleware
 import com.sinx.todo.base.Either
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -14,10 +15,14 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 import kotlin.reflect.KClass
 
-class SocketClient(url: String, val middleware: (String, String) -> Unit = { _, _ ->}) {
+class SocketClient(url: String) {
     private val socketIO = IO.socket(url)
 
-    constructor(url: String) : this(url, {_, _ -> })
+    private val listMiddleware: MutableList<WebSocketMiddleware> = mutableListOf()
+
+    fun addMiddleware(webSocketMiddleware: WebSocketMiddleware) {
+        listMiddleware.add(webSocketMiddleware)
+    }
 
     fun connect() {
         if (socketIO.connected().not()) {
@@ -31,10 +36,10 @@ class SocketClient(url: String, val middleware: (String, String) -> Unit = { _, 
     @OptIn(InternalSerializationApi::class)
     fun <T : Any> on(event: Event<T>): Flow<Either<Throwable, T>> =
         subscribeToEvent(event.nameEvent)
-            .map {
+            .map { json ->
                 try {
-                    middleware(event.nameEvent, it)
-                    Either.Right(Json.decodeFromString(event.returnClass.serializer(), it))
+                    listMiddleware.forEach { middleware -> middleware(event.nameEvent, json) }
+                    Either.Right(Json.decodeFromString(event.returnClass.serializer(), json))
                 } catch (e: Exception) {
                     Either.Left(e)
                 }
