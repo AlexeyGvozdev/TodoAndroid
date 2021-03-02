@@ -67,5 +67,10 @@ class SocketClient(url: String) {
         socketIO.disconnect()
     }
 
+    fun emit(emit: Emit) {
+        socketIO.emit(emit.nameEvent, emit.data)
+    }
+
     open class Event<T : Any>(val nameEvent: String, val returnClass: KClass<T>)
+    open class Emit(val nameEvent: String, val data: Any)
 }

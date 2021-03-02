@@ -2,6 +2,7 @@ package com.sinx.todo.di.modules
 
 import com.sinx.todo.api.ws.SocketClient
 import com.sinx.todo.di.scopes.ActivityScope
+import com.sinx.todo.repository.AddTaskRepository
 import com.sinx.todo.repository.TableRepository
 import dagger.Module
 import dagger.Provides
@@ -13,5 +14,10 @@ class RepositoryModule {
     @Provides
     fun provideTableRepository(socketClient: SocketClient): TableRepository =
         TableRepository(socketClient)
+
+    @ActivityScope
+    @Provides
+    fun provideAddTaskRepository(socketClient: SocketClient): AddTaskRepository =
+        AddTaskRepository(socketClient)
 
 }

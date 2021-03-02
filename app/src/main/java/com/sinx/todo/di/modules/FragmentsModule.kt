@@ -5,7 +5,10 @@ import com.sinx.todo.di.DaggerFragmentFactory
 import com.sinx.todo.di.FragmentKey
 import com.sinx.todo.di.scopes.ActivityScope
 import com.sinx.todo.di.scopes.ApplicationScope
+import com.sinx.todo.repository.AddTaskRepository
 import com.sinx.todo.repository.TableRepository
+import com.sinx.todo.ui.add.task.AddTaskBottomSheet
+import com.sinx.todo.ui.add.task.provideAddTaskTea
 import com.sinx.todo.ui.table.TableFragment
 import com.sinx.todo.ui.table.provideTableTea
 import dagger.Module
@@ -28,4 +31,11 @@ class FragmentsModule {
     fun provideTableFragment(
         tableRepository: TableRepository
     ): Fragment = TableFragment(provideTableTea(tableRepository))
+
+    @Provides
+    @IntoMap
+    @FragmentKey(value = AddTaskBottomSheet::class)
+    fun provideAddTaskFragment(
+        addTaskRepository: AddTaskRepository
+    ): Fragment = AddTaskBottomSheet(provideAddTaskTea(addTaskRepository))
 }
