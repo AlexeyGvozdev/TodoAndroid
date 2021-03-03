@@ -68,7 +68,7 @@ fun provideTableTea(repository: TableRepository): TableTea {
             }
             TableMsg.AddTaskPressed -> {
                 model to { dispatch ->
-                    dispatch(Command.ActionCommand(TableAction.ToAddTask))
+                    dispatch(Command.ActionCommand(TableAction.ToAddTask()))
                 }
             }
             is TableMsg.Connection -> model.copy(connection = msg.connection) to {}
@@ -103,5 +103,5 @@ data class TableViewState(
 )
 
 sealed class TableAction {
-    object ToAddTask : TableAction()
+    class ToAddTask : TableAction()
 }

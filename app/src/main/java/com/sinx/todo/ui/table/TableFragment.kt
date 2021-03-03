@@ -63,7 +63,7 @@ class TableFragment(tea: TableTea) : Fragment(R.layout.fragment_table) {
 
     private fun doAction(action: TableAction) {
         when (action) {
-            TableAction.ToAddTask -> findNavController().navigate(R.id.addTaskDialog)
+            is TableAction.ToAddTask -> findNavController().navigate(R.id.addTaskDialog)
         }
     }
 

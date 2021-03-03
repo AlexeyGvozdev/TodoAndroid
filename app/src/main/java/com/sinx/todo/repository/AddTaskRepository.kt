@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.flowOf
 
 class AddTaskRepository(private val socketClient: SocketClient) {
 
-    fun addTask(taskItem: TaskItem) {
-        socketClient.emit(AddTaskEmit(taskItem))
+    fun addTask(taskName: String) {
+        socketClient.emit(AddTaskEmit(taskName))
     }
 }

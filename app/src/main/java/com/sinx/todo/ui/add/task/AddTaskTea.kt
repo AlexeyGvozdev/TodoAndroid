@@ -20,7 +20,7 @@ fun provideAddTaskTea(
         when (msg) {
             AddTaskMsg.OnClosePressed -> model to none()
             is AddTaskMsg.OnCreatePressed -> model to { dispatch ->
-                addTaskRepository.addTask(TaskItem(123, msg.taskName, false))
+                addTaskRepository.addTask(msg.taskName)
                 dispatch(Command.ActionCommand(AddTaskAction.CloseDialog))
             }
         }
